@@ -1,10 +1,11 @@
 
 import psycopg
-from psycopg.rows import dict_row 
+from psycopg.rows import dict_row
 from datetime import datetime
 import click
-from flask import current_app, g 
-from config import load_config
+from flask import current_app, g
+
+from .config import load_config
 
 config = load_config()
 
@@ -32,4 +33,7 @@ def init_db():
 def init_db_cmd():
     init_db()
     click.echo("DB inicializado")
-    
+
+def init_app(app):
+    app.teardown_appcontext(close_db)
+    app.cli.add_command(init_db_cmd)

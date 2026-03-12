@@ -17,6 +17,10 @@ def create_app(test_conf=None):
     @app.route("/")
     def home():
         return render_template('index.html')
+    
+    from . import db
+    db.init_app(app)
+    
     return app
 
 

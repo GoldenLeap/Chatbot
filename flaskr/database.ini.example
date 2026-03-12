@@ -1,5 +1,5 @@
 [postgresql]
 host=host
-database=database
+dbname=database
 user=user 
 password=password
