@@ -1,0 +1,151 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+.placeholder {
+    text-align: center;
+    color: #aaa;
+    font-style: italic;
+
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+
+
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.chat{
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 20px;
+    width: 100%;
+    max-width: 600px;
+
+    height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+    scroll-behavior: smooth;
+}
+.chat::-webkit-scrollbar{
+    width: 6px;
+}
+
+.chat::-webkit-scrollbar-thumb{
+    background-color: #ccc;
+    border-radius: 10px;
+}
+
+.title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.msg-box {
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #ddd;
+    min-height: 80px;
+    background-color: #f4f4f4;
+    box-shadow:0 4px 6px #0000000c;
+    transform: transform .2s;
+}
+
+.quest{
+    align-self: flex-end;
+    background-color: #470070;
+    color: #fefefe;
+    border: none;
+    border-bottom-right-radius: 2p;
+}
+
+.result {
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.error {color: #fc4d4d}
+
+.prompt-area {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+#prompt{
+    flex: 1;
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid #eee;
+    resize: none;
+    height: 100px;
+    outline: none;
+    transition: border-color .3s;
+}
+#prompt:focus {
+    border-color: #7d7c7c;
+}
+.confirm{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    width: 50px;
+    background-color: #7d7c7c;
+    color: #f4f4f4;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all .1s ease;
+}
+
+.confirm:hover{
+    transform: scale(1.1);
+}
+
+.confirm:active {
+    transform: scale(.94);
+}
+
+.hidden
+{
+    display: none;
+}
+
+@media (max-width: 480px)
+{
+    main 
+    {
+        width: 100%;
+    }
+    .prompt-area{
+        flex-direction: column;
+    }
+    .confirm{
+        width: 100%;
+        border-radius: 10px;
+    }
+}
+
+
+.confirm i{
+    user-select: none;
+}
