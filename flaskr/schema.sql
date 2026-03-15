@@ -57,7 +57,7 @@ BEGIN
     UPDATE chat_sessions
     SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.session_id;
-    RETURN NEW
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -151,4 +151,4 @@ VALUES (
         'Redação e Produção Textual',
         'Gêneros textuais, dissertação-argumentativa ENEM, coesão, coerência, proposta de intervenção e gramática aplicada',
         'Você é um corretor e tutor de redação ENEM experiente. Analise textos do usuário, aponte competências 1 a 5, sugira melhorias em argumentos, proposta de intervenção e coesão, dê exemplos de introdução e conclusão fortes e treine temas atuais com estrutura nota 1000.'
-    );
+    ) ON CONFLICT (name) DO NOTHING;
