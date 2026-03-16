@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+    <div class="chat-info">
+        <h3>{{session['title']}}</h3>
+        <span class="badge">{{ session['category_name'] }}</span>
+    </div>
+    <div class="mascot-companion">
+        <img src="{{ url_for('static', filename='images/avatar.png')}}" alt="Avatar" class="mascot-avatar">
+        <p>O guaxinim de {{ session['category_name'] }} está pronto para ajudar!</p>
+    </div>
+    <a href="{{ url_for('index') }}">Sair do chat</a>
+</div>
+
+<div class="chat-main">
+    <div class="chat-messages" id="chat-messages"
+         data-send-url="{{ url_for('chat.send_message', session_id=session['id']) }}">
+        {% for msg in messages %}
+        <div class="message {{ 'message-bot' if msg['role'] == 'assistant' else 'message-user'}}">
+            <div class="message-bubble">
+                {% if msg['role'] == 'assistant' %}
+                <span class="message-sender">Guaxinim</span>
+                {% else %}
+                <span class="message-sender">Você</span>
+                {% endif %}
+                <p>{{ msg['content'] }}</p>
+                <span class="message-time">{{ msg['created_at'].strftime('%H:%M') }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-chat" id="empty-chat">
+            <p>Nenhuma mensagem ainda. Mande qualquer coisa para começar a estudar 🦝</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-input-area">
+        <form id="chat-form" class="chat-form">
+            <input type="text" id="message-input" name="content"
+                   placeholder="Digite sua dúvida aqui..." autocomplete="off" required>
+            <button type="submit" class="btn-send" id="send-btn">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor"
+                     stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <div class="page-header">
+        <h2>Histórico de Estudos</h2>
+        <p>Todos os seus chats organizados por matéria</p>
+    </div>
+
+    {% if grouped %}
+        {% for group in grouped %}
+        <div class="history-category-group">
+            <div class="category-group-header">
+                <span class="cat-icon">📚</span>
+                <h3>{{ group.category_name }}</h3>
+                <span class="session-count">{{ group.sessions | length }} sessão(ões)</span>
+            </div>
+            <div class="session-list">
+                {% for session in group.sessions %}
+                <a href="{{ url_for('chat.session_view', session_id=session['id']) }}" class="session-item">
+                    <div class="session-item-info">
+                        <span class="session-title">{{ session['title'] }}</span>
+                        <span class="session-date">🕒 {{ session['updated_at'].strftime('%d/%m/%Y às %H:%M') }}</span>
+                    </div>
+                    <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="empty-history">
+        <div class="empty-icon">🦝</div>
+        <h3>Nenhuma sessão ainda!</h3>
+        <p>Comece a estudar na página inicial para ver seu histórico aqui.</p>
+        <a href="{{ url_for('index') }}" class="btn-primary" style="display:inline-block; padding: 0.875rem 2rem; text-decoration:none; border-radius: var(--radius-md); width: auto; margin-top: 1rem;">Começar a Estudar</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

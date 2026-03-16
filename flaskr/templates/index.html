@@ -1,23 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot - </title>
-    <link rel="stylesheet" href="static/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iconoir-icons/iconoir@main/css/iconoir.css" />
-</head>
-<body>
-    <main>
-        <h1 class="title">Temp</h1>
-        <div class="chat">
-            <div class="placeholder">Digite qualquer coisa para começar</div>
+{% extends 'base.html' %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="welcome-section">
+    <div class="mascot-greetings">
+        <div class="mascot-img">
+            <img src="{{ url_for('static', filename='images/avatar.png') }}" alt="Mascote"> 
         </div>
-        <div class="prompt-area">
-            <textarea name="prompt" placeholder="Escreva uma mensagem..." id="prompt"></textarea>
-            <button class="confirm" onclick="sendPrompt()"><i class="iconoir-check"></i></button>
+        <div class="greetings-text">
+            <h2>Olá!</h2>
+            <p>Estou aqui para ajudar você com seus estudos. Selecione uma especialidade abaixo para começarmos!</p>
         </div>
-    </main>
-    <script src=''></script>
-</body>
-</html>
+    </div>
+</div>
+
+<div class="specialities-section">
+    <h3>Especialidades disponiveis</h3>
+    <div class="categories-grid">
+        {% for category in categories %}
+        <form action="{{ url_for('chat.create_session', category_id=category['id']) }}" method="post" class="category-card">
+            <h4>{{ category['name'] }}</h4>
+            <p>{{ category['description'] }}</p>
+            <button type="submit" class="btn-primary">Iniciar Sessão</button>
+        </form>
+        {% else %}
+        <div class="empty-state">
+            <p>Nenhuma categoria cadastrada no banco de dados.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if sessions %}
+<div class="history-section">
+    <h3>Histórico de Chats Antigos</h3>
+    <div class="history-grid">
+        {% for session in sessions %}
+        <a href="{{ url_for('chat.session_view', session_id=session['id']) }}" class="history-card">
+            <h4>{{ session['title'] }}</h4>
+            <span class="category-badge">{{ session['category_name'] }}</span>
+            <p class="timestamp">Última atividade: {{ session['updated_at'].strftime('%d/%m/%Y %H:%M') }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
