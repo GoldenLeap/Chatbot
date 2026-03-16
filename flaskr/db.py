@@ -10,13 +10,14 @@ from .config import load_config
 config = load_config()
 
 def get_db():
+    """Retorna a conexão com o banco de dados. Se não existir no contexto (g), cria uma nova."""
     if 'db' not in g:
         try:
             g.db = psycopg.connect(**config)
             g.db.row_factory = dict_row
         except (Exception) as e:
             print(e)
-    return g.db 
+    return g.db
 
 def close_db(e=None):
     db = g.pop('db', None)
@@ -35,11 +36,12 @@ def init_db_cmd():
     click.echo("DB inicializado")
 
 def init_app(app):
+    """Registra comandos CLI e a função de limpeza de contexto na aplicação Flask."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_cmd)
 
 
-# 
+# --- Funções de Manipulação de Dados ---
 
 def create_message(session_id, role, content):
     """
@@ -62,20 +64,24 @@ def get_session_messages(session_id, include_system=False):
     
     return db.execute(query, (session_id,)).fetchall()
 
-# Pegar contexto do chat
+# Trata e recupera o contexto para a IA
 
 def get_ai_context(session_id, limit=15):
     """
-        Busca o System prompt + as ultimas N mensagens
-        Formata como o modelo espera
+    Busca o prompt de sistema original, o resumo mais recente (se houver),
+    e as últimas N mensagens da conversa.
+    Formata no padrão que o modelo (llama/Groq) espera.
     """
     db = get_db()
+    # Pega o prompt de sistema (especialização da categoria) que foi definido na criação do chat
     system_origin = db.execute(
         "SELECT role, content FROM messages WHERE session_id = %s AND role = 'system' ORDER BY created_at ASC LIMIT 1",
         (session_id, )
     ).fetchone()
+    
     last_sum = get_last_summary(session_id)
-    # Query hibrida: System prompt + Ultimas N mensagens
+    
+    # Busca apenas as mensagens mais recentes (limite de contexto), ordenadas crescentemente
     recent_msgs = db.execute(
         "SELECT role, content FROM (SELECT id, role, content FROM messages WHERE session_id = %s AND role NOT IN ('system') ORDER BY created_at DESC LIMIT 6) sub ORDER BY id ASC",    
         (session_id,)
