@@ -11,12 +11,14 @@ bp = Blueprint('chat', __name__)
 
 @bp.route('/')
 def index():
+    """Renderiza a página inicial (dashboard) mostrando categorias e histórico recente."""
     db = get_db()
     
     categorias = db.execute(
         'SELECT id, name, description FROM categories ORDER BY name ASC'
     ).fetchall()
     
+    # Pega o primeiro usuário (sistema monousuário para fins de demonstração)
     user = db.execute('SELECT id FROM users LIMIT 1').fetchone()
     sessions = []
     if user:
@@ -35,17 +37,21 @@ def history():
 
 @bp.route('/create/<int:category_id>', methods=('POST',) )
 def create_session(category_id):
+    """Cria uma nova sessão de chat vinculada a uma categoria específica."""
     db = get_db()
     
+    # Garantia de usuário existente (Mock de autenticação)
     user = db.execute('SELECT id FROM users LIMIT 1').fetchone()
     if not user:
         db.execute('INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)',
                    ('estudante1', 'estudante@teste.com', generate_password_hash('senha123')))
         db.commit()
         user = db.execute('SELECT id FROM users LIMIT 1').fetchone()
+        
     category = db.execute('SELECT name, prompt_specialization FROM categories WHERE id = %s', (category_id, )).fetchone()
     if not category:
         abort(404,  f'Categoria {category_id} não existe')
+        
     title = f"Chat de {category['name']}"
     
     cursor = db.execute(
@@ -76,8 +82,10 @@ def session_view(session_id):
 
 @bp.route('/chat/<int:session_id>/send', methods=('POST',))
 def send_message(session_id):
+    """Endpoint JSON (AJAX) que processa e responde mensagens do usuário via Groq API."""
     from flask import jsonify
     from datetime import datetime
+    
     session_info = get_session_info(session_id)
     if session_info is None:
         return jsonify({'error': 'Sessão não encontrada'}), 404
@@ -88,15 +96,18 @@ def send_message(session_id):
     if not content:
         return jsonify({'error': 'Mensagem vazia'}), 400
 
+    # Salva a mensagem do usuário
     create_message(session_id, 'user', content)
 
     total_msgs = count_messages(session_id)
 
+    # Gera um título dinâmico na primeira interação
     new_title = None
     if total_msgs == 1:
         new_title = generate_session_title(content, session_info['category_name'])
         update_session_title(session_id, new_title)
 
+    # A cada 10 mensagens interativas (após a 15ª), salva um resumo pedagógico para não perder o contexto
     if total_msgs > 15 and total_msgs % 10 == 0:
         full_history = get_ai_context(session_id, limit=30)
         summary = generate_summary(full_history)
