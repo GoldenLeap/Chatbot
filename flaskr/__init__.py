@@ -14,12 +14,12 @@ def create_app(test_conf=None):
         app.config.from_mapping(test_conf)
     os.makedirs(app.instance_path, exist_ok=True)
     
-    @app.route("/")
-    def home():
-        return render_template('index.html')
-    
     from . import db
     db.init_app(app)
+    
+    from . import chat
+    app.register_blueprint(chat.bp)
+    app.add_url_rule('/',  endpoint='index')
     
     return app
 
