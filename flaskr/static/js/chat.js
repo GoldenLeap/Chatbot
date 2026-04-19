@@ -60,7 +60,7 @@
             const raw = p.textContent;
             const md = document.createElement('div');
             md.className = 'md-content';
-            md.innerHTML = marked.parse(raw);
+            md.innerHTML = DOMPurify.sanitize(marked.parse(raw));
             p.replaceWith(md);
             renderMath(md); // Renderiza o KaTeX após o markdown
         });
@@ -91,7 +91,7 @@
         const wrapper = document.createElement('div');
         wrapper.className = `message ${role === 'user' ? 'message-user' : 'message-bot'}`;
         const bodyHtml = role === 'bot'
-            ? `<div class="md-content">${marked.parse(content)}</div>`
+            ? `<div class="md-content">${DOMPurify.sanitize(marked.parse(content))}</div>`
             : `<p>${escapeHtml(content)}</p>`;
         wrapper.innerHTML = `
             <div class="message-bubble">
@@ -161,19 +161,75 @@
                 body: JSON.stringify({ content })
             });
 
-            typingEl.remove();
-
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            const data = await res.json();
-            chatMessages.appendChild(createMessageEl('bot', data.bot.content, data.bot.time));
+            typingEl.remove();
 
-            if (data.new_title) {
-                updateTitle(data.new_title);
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let isFirstChunk = true;
+            let botMessageWrapper = null;
+            let mdContent = null;
+            let currentContent = '';
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                let lines = buffer.split('\n\n');
+                buffer = lines.pop(); // Mantém o que não terminou com \n\n no buffer
+
+                for (let line of lines) {
+                    if (line.startsWith('data: ')) {
+                        let jsonStr = line.substring(6);
+                        if (!jsonStr.trim()) continue;
+                        
+                        try {
+                            const data = JSON.parse(jsonStr);
+
+                            if (data.new_title) {
+                                updateTitle(data.new_title);
+                            }
+
+                            if (data.chunk !== undefined) {
+                                currentContent += data.chunk;
+
+                                if (isFirstChunk) {
+                                    isFirstChunk = false;
+                                    botMessageWrapper = createMessageEl('bot', '', nowTime());
+                                    chatMessages.appendChild(botMessageWrapper);
+                                    mdContent = botMessageWrapper.querySelector('.md-content');
+                                }
+
+                                if (mdContent) {
+                                    mdContent.innerHTML = DOMPurify.sanitize(marked.parse(currentContent));
+                                    scrollToBottom();
+                                }
+                            }
+
+                            if (data.done) {
+                                // Finaliza o stream renderizando KaTeX
+                                if (mdContent) {
+                                    renderMath(mdContent);
+                                }
+                            }
+                        } catch(e) {
+                            console.error("Erro ao fazer parse do chunk JSON:", e, jsonStr);
+                        }
+                    }
+                }
             }
+
+            // Garantia final
+            if (!botMessageWrapper && !isFirstChunk){
+                 // Caso ocorra problema, renderizamos no finally ou cai no catch
+            }
+
         } catch (err) {
             console.error('[chat.js]', err);
-            typingEl.remove();
+            if(document.getElementById('typing-indicator')) typingEl.remove();
             chatMessages.appendChild(createErrorEl());
         } finally {
             setLoading(false);

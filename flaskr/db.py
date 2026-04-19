@@ -73,11 +73,15 @@ def get_ai_context(session_id, limit=15):
     Formata no padrão que o modelo (llama/Groq) espera.
     """
     db = get_db()
-    # Pega o prompt de sistema (especialização da categoria) que foi definido na criação do chat
-    system_origin = db.execute(
-        "SELECT role, content FROM messages WHERE session_id = %s AND role = 'system' ORDER BY created_at ASC LIMIT 1",
-        (session_id, )
+    # Reconstruir o prompt de sistema DINAMICAMENTE na hora do envio
+    # Isso garante que alterações nas regras do bot.py afetem sessões antigas imediatamente,
+    # não dependendo mais da mensagem 'system' congelada no banco de dados.
+    cat_info = db.execute(
+        "SELECT c.name, c.prompt_specialization FROM chat_sessions s JOIN categories c ON s.category_id = c.id WHERE s.id = %s",
+        (session_id,)
     ).fetchone()
+    import flaskr.bot as bot
+    system_origin = {"role": "system", "content": bot.build_bot_context(cat_info['name'], cat_info['prompt_specialization'])}
     
     last_sum = get_last_summary(session_id)
     

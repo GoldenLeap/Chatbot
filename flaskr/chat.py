@@ -82,9 +82,9 @@ def session_view(session_id):
 
 @bp.route('/chat/<int:session_id>/send', methods=('POST',))
 def send_message(session_id):
-    """Endpoint JSON (AJAX) que processa e responde mensagens do usuário via Groq API."""
-    from flask import jsonify
-    from datetime import datetime
+    """Endpoint via POST que responde formatado em Server-Sent Events (SSE) rodando o Llama em stream."""
+    from flask import jsonify, Response, stream_with_context
+    import json
     
     session_info = get_session_info(session_id)
     if session_info is None:
@@ -96,30 +96,33 @@ def send_message(session_id):
     if not content:
         return jsonify({'error': 'Mensagem vazia'}), 400
 
-    # Salva a mensagem do usuário
     create_message(session_id, 'user', content)
 
     total_msgs = count_messages(session_id)
 
-    # Gera um título dinâmico na primeira interação
     new_title = None
     if total_msgs == 1:
         new_title = generate_session_title(content, session_info['category_name'])
         update_session_title(session_id, new_title)
 
-    # A cada 10 mensagens interativas (após a 15ª), salva um resumo pedagógico para não perder o contexto
     if total_msgs > 15 and total_msgs % 10 == 0:
         full_history = get_ai_context(session_id, limit=30)
         summary = generate_summary(full_history)
         create_message(session_id, 'system', summary)
 
     history = get_ai_context(session_id)
-    bot_reply = call_chatbot_api(history)
-    create_message(session_id, 'assistant', bot_reply)
+    
+    def generate():
+        if new_title:
+            yield f"data: {json.dumps({'new_title': new_title})}\n\n"
+            
+        full_bot_reply = ""
+        for chunk in fix_latex_stream(stream_chatbot_api(history)):
+            if chunk:
+                full_bot_reply += chunk
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+        
+        create_message(session_id, 'assistant', full_bot_reply)
+        yield f"data: {json.dumps({'done': True})}\n\n"
 
-    now = datetime.now().strftime('%H:%M')
-    return jsonify({
-        'user':      {'content': content, 'time': now},
-        'bot':       {'content': bot_reply, 'time': now},
-        'new_title': new_title  
-    })
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
